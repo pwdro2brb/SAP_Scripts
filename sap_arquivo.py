@@ -373,7 +373,7 @@ print("✅ Relatório executado!")
 '''
 
 
-
+'''
 # ============================================================
 # CONFIGURAÇÃO DO TESSERACT - VERSÃO DEFINITIVA
 # ============================================================
@@ -907,7 +907,7 @@ else:
     print("=" * 50)
     focar_sap()
     sair_transacao_sap()
-
+'''
 
 print()
 print("=" * 50)
