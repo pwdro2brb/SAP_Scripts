@@ -77,7 +77,7 @@ CAMPO_LAYOUT        = (3442, 816)
 CHECKBOX_PRIMEIRO   = (2917, 300)
 SETA_VERDE          = (2986, 231)
 SCROLLBAR_USUARIOS  = (4420, 550)
-MEU_NOME            = (3863, 934)
+MEU_NOME            = (3903, 766)# valor original(3863, 934)
 BOTAO_OK_USUARIO    = (4370, 1257)
 CAMPO_PROTOCOLO     = (4105, 643)
 CAMPO_NUMERO        = (4003, 778)
@@ -89,7 +89,19 @@ BOTAO_SALVAR_NOVAMENTE = (3509, 718)
 LANCAR_MIRO_POSICAO = (4060, 237)  
 CAMPO_CTG_NFE       = (3154, 611)
 APERTAR_SAIR_CONFERENCIA = (4306,234)  
-
+BOTAO_INICIO_PROCESSO    = (3011, 306)
+CAMPO_COLAR_VALOR_SAP    = (3164, 441)
+CAMPO_COLAR_PEDIDO       = (3613, 369)
+CAMPO_NUMERO_PEDIDO_SAP  = (3640, 846)   # De onde lê o número do pedido
+BOTAO_CONDICIONAL_PF_PJ  = (3506, 303)
+CAMPO_VERIFICAR_PF_PJ    = (3963, 849)   # Onde verifica se é PF ou PJ
+CAMPO_SELECAO_INICIO     = (3151, 408)   # Início da seleção (arrastar)
+CAMPO_SELECAO_FIM        = (3167, 563)   # Fim da seleção (arrastar)
+BOTAO_APOS_CONDICIONAL   = (3304, 183)
+BOTAO_ATUALIZAR_1        = (3267, 80)    # SAP atualiza após clicar
+BOTAO_ATUALIZAR_2        = (3161, 183)   # SAP atualiza após clicar
+BOTAO_ATUALIZAR_3        = (3795, 642)   # SAP atualiza após clicar
+BOTAO_ATUALIZAR_4        = (4206, 1250)  # SAP atualiza após clicar
 
 # ============================================================
 # FUNÇÕES AUXILIARES
@@ -151,7 +163,7 @@ print("  AUTOMAÇÃO ZMM180 - INICIANDO")
 print("=" * 50)
 print()
 
-'''
+
 # ============================================================
 # PASSO 0: FOCAR NA JANELA DO SAP (MONITOR CORRETO)
 # ============================================================
@@ -360,6 +372,8 @@ focar_sap()
 clicar(LANCAR_MIRO_POSICAO)
 print("✅ Registro selecionado!")
 
+
+
 print("\nPASSO 22: Preenchendo CTG...")
 clicar_e_digitar(CAMPO_CTG_NFE, 'AL')
 print("✅ Ctg.NF = AL")
@@ -370,10 +384,6 @@ pyautogui.press('enter')
 time.sleep(2)
 print("✅ Relatório executado!")
 
-'''
-
-
-'''
 # ============================================================
 # CONFIGURAÇÃO DO TESSERACT - VERSÃO DEFINITIVA
 # ============================================================
@@ -907,7 +917,144 @@ else:
     print("=" * 50)
     focar_sap()
     sair_transacao_sap()
-'''
+
+# ============================================================
+# PASSO 26: Clicar no botão de início do processo
+# ============================================================
+print("\nPASSO 26: Clicando no botão de início...")
+focar_sap()
+clicar(BOTAO_INICIO_PROCESSO)
+time.sleep(1)
+print("✅ Botão clicado!")
+
+# ============================================================
+# PASSO 27: Colar o valor do SAP (já lido no PASSO 24)
+# ============================================================
+print("\nPASSO 27: Colando valor do SAP...")
+focar_sap()
+clicar_e_digitar(CAMPO_COLAR_VALOR_SAP, valor_sap_raw)
+print(f"✅ Valor colado: '{valor_sap_raw}'")
+
+# ============================================================
+# PASSO 28: Ler número do pedido e colar últimos 6 dígitos + "-C"
+# ============================================================
+print("\nPASSO 28: Lendo número do pedido...")
+focar_sap()
+
+numero_pedido_raw = ler_campo_sap(CAMPO_NUMERO_PEDIDO_SAP)
+print(f"   Número do pedido completo: '{numero_pedido_raw}'")
+
+# Extrai só os números do pedido
+numero_pedido_limpo = re.sub(r'\D', '', numero_pedido_raw)
+
+# Pega os últimos 6 dígitos e adiciona "-C"
+ultimos_6_pedido = numero_pedido_limpo[-6:]
+valor_pedido_formatado = f"{ultimos_6_pedido}-C"
+
+print(f"   Últimos 6 dígitos: '{ultimos_6_pedido}'")
+print(f"   Valor formatado:   '{valor_pedido_formatado}'")
+
+# Cola no campo
+clicar_e_digitar(CAMPO_COLAR_PEDIDO, valor_pedido_formatado)
+print(f"✅ Pedido colado: '{valor_pedido_formatado}'")
+
+# ============================================================
+# PASSO 29: Verificar se é PF ou PJ e agir conforme
+# ============================================================
+print("\nPASSO 29: Verificando se é PF ou PJ...")
+focar_sap()
+
+tipo_pf_pj = ler_campo_sap(CAMPO_VERIFICAR_PF_PJ)
+print(f"   Tipo encontrado: '{tipo_pf_pj}'")
+
+if 'PF' in tipo_pf_pj.upper():
+    # ─── É PF: não faz nada ───
+    print("   📋 É PF → Não faz nada, segue o fluxo.")
+    
+    # Apenas clica no botão
+    clicar(BOTAO_CONDICIONAL_PF_PJ)
+    time.sleep(0.5)
+    print("✅ Botão clicado (PF)!")
+
+else:
+    # ─── É PJ: aperta Ctrl+Y, seleciona arrastando e deleta ───
+    print("   🏢 É PJ → Executando limpeza...")
+    
+    # Clica no botão primeiro
+    clicar(BOTAO_CONDICIONAL_PF_PJ)
+    time.sleep(0.5)
+    
+    # Ctrl+Y
+    pyautogui.hotkey('ctrl', 'y')
+    time.sleep(0.5)
+    print("   ✅ Ctrl+Y pressionado!")
+    
+    # Seleciona arrastando de CAMPO_SELECAO_INICIO até CAMPO_SELECAO_FIM
+    print("   🖱️ Selecionando área (arrastando)...")
+    pyautogui.moveTo(x=CAMPO_SELECAO_INICIO[0], y=CAMPO_SELECAO_INICIO[1])
+    time.sleep(0.3)
+    pyautogui.mouseDown()
+    time.sleep(0.2)
+    pyautogui.moveTo(
+        x=CAMPO_SELECAO_FIM[0], 
+        y=CAMPO_SELECAO_FIM[1], 
+        duration=0.5
+    )
+    time.sleep(0.2)
+    pyautogui.mouseUp()
+    time.sleep(0.3)
+    print("   ✅ Área selecionada!")
+    
+    # Aperta Delete
+    pyautogui.press('delete')
+    time.sleep(0.5)
+    print("   ✅ Conteúdo deletado!")
+    
+    print("✅ Processo PJ concluído!")
+
+# ============================================================
+# PASSO 30: Clicar no botão após a condicional
+# ============================================================
+print("\nPASSO 30: Clicando no botão pós-condicional...")
+focar_sap()
+clicar(BOTAO_APOS_CONDICIONAL)
+time.sleep(1)
+print("✅ Botão clicado!")
+
+# ============================================================
+# PASSO 31: Sequência de botões (SAP atualiza entre cada um)
+# ============================================================
+print("\nPASSO 31: Executando sequência de atualização...")
+focar_sap()
+
+# Botão 1
+print("   🔄 Clicando botão 1/4...")
+clicar(BOTAO_ATUALIZAR_1)
+time.sleep(3)  # SAP atualiza
+print("   ✅ Botão 1 OK!")
+
+# Botão 2
+print("   🔄 Clicando botão 2/4...")
+clicar(BOTAO_ATUALIZAR_2)
+time.sleep(3)  # SAP atualiza
+print("   ✅ Botão 2 OK!")
+
+# Botão 3
+print("   🔄 Clicando botão 3/4...")
+clicar(BOTAO_ATUALIZAR_3)
+time.sleep(3)  # SAP atualiza
+print("   ✅ Botão 3 OK!")
+
+# Botão 4
+print("   🔄 Clicando botão 4/4...")
+clicar(BOTAO_ATUALIZAR_4)
+time.sleep(3)  # SAP atualiza
+print("   ✅ Botão 4 OK!")
+
+print("\n" + "=" * 50)
+print("  🎉 PROCESSO COMPLETO!")
+print("=" * 50)
+
 
 print()
 print("=" * 50)
